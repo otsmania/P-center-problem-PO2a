@@ -1,0 +1,56 @@
+import os
+import math
+
+def le_dados_inst(arq_instancia):
+
+    # Inicialização de variáveis
+
+    num_pontos = None
+    p_centros = None
+    min_pontos_centro = None
+    max_pontos_centro = None
+    coordenadas = []
+    distancia = []
+
+    # Abrindo arquivo para leitura
+
+    with open(arq_instancia, 'r', encoding='utf8') as f:
+        linhas = f.readlines()
+
+        # Lendo e convertendo os parâmetros
+
+        num_pontos = int(linhas[1].strip().split(';')[0])
+        p_centros = int(linhas[1].strip().split(';')[1])
+        min_pontos_centro = int(linhas[1].strip().split(';')[2])
+        max_pontos_centro = int(linhas[1].strip().split(';')[3])
+
+        del linhas[:3]
+
+        # Lendo as coordenadas
+        for i in range(num_pontos):
+            coordenadas.append(tuple(map(int, linhas[i].strip().split(';')[1:])))
+
+
+    return num_pontos, p_centros, min_pontos_centro, max_pontos_centro, coordenadas
+# Caminho para a pasta com os arquivos CSV
+pasta = "arq_instancia"  # Atualizado para o novo nome da pasta
+
+# Lista para armazenar os resultados
+resultados = []
+
+# Processando cada arquivo na pasta
+for arquivo in os.listdir(pasta):
+    if arquivo.endswith('.csv'):  # Certifica-se de que é um arquivo CSV
+        caminho_arquivo = os.path.join(pasta, arquivo)  # Caminho completo
+        resultados.append((arquivo, le_dados_inst(caminho_arquivo)))  # Adiciona os resultados à lista, agora incluindo o nome do arquivo
+
+# Exibindo os resultados para verificação
+for nome_arquivo, resultado in resultados:
+    num_pontos, p_centros, min_pontos_centro, max_pontos_centro, coordenadas = resultado
+    print(f'Arquivo: {nome_arquivo}')  # Exibe o nome do arquivo
+    print(f'Número de pontos: {num_pontos}')
+    print(f'Pontos de centros: {p_centros}')
+    print(f'Mínimo de pontos por centro: {min_pontos_centro}')
+    print(f'Máximo de pontos por centro: {max_pontos_centro}')
+    print(f'Coordenadas: {coordenadas}')
+    print('----------------------------------------')  # Linha separadora entre os resultados de arquivos
