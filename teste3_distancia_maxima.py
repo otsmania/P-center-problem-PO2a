@@ -96,8 +96,8 @@ def heuristica_distancia_maxima(dists, qtd_centros, lig_min, lig_max):
             continue
         # coloca o ponto atual no centro q ta mais perto
         distancias = [(c, dists[i][c]) for c in centros]
-        distancias.sort(key=lambda x: x[1])  # até agora não sei como nem porque uma função lambda existe, mas eu gosto da letra então eu vou deixar passar
-        for c, _ in distancias:                          #mas taquei na net e isso aq ordena tupla com base no primeiro valor, pra eu ordenar os valores do menor pro maior
+        distancias.sort(key=lambda x: x[1])  # até agora não sei como  função lambda existe, como q uma função anonima cai na memória?, Mas eu gosto da letra então eu vou deixar passar
+        for c, _ in distancias:                          #taquei na net e isso aq ordena tupla com base no primeiro valor, pra eu ordenar os valores do menor pro maior
             if len(atribuicoes[c]) < lig_max:
                 atribuicoes[c].append(i)
                 break
@@ -136,7 +136,23 @@ def heuristica_distancia_maxima(dists, qtd_centros, lig_min, lig_max):
         linha = [str(c)] + [str(p) for p in atribuicoes[c]]
         resultado.append(";".join(linha))
     
-    return resultado
+    return resultado, custo_total, atribuicoes
+
+def resolve_instancia(arq_instancia, arq_solucao):
+    
+    qtd_pontos, qtd_centros, lig_min, lig_max, coords, dists = ler_dados_instancia(arq_instancia)
+    
+    
+    resultado, custo_total, atribuicoes = heuristica_distancia_maxima(dists, qtd_centros, lig_min, lig_max)
+    
+    
+    with open(arq_solucao, "w", encoding="utf8") as f:
+        for linha in resultado:
+            f.write(linha + "\n")
+    
+    print(f"Solução salva em {arq_solucao}")
+
+
 
 
 #sim, está feio, não, não funciona bem, mas funciona o *suficiente*     
