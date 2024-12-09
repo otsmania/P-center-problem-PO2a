@@ -1,0 +1,167 @@
+import os
+import math
+
+def le_dados_inst(arq_instancia):
+    # Inicialização de variáveis
+    num_pontos = None
+    p_centros = None
+    min_pontos_centro = None
+    max_pontos_centro = None
+    coordenadas = []
+    distancia = []
+    custo_total = None
+    pasta = "arq_instancia"
+    resultados = []
+
+    # Abrindo arquivo para leitura
+    with open(arq_instancia, 'r', encoding='utf8') as f:
+        linhas = f.readlines()
+
+        # Lendo e convertendo os parâmetros
+        num_pontos = int(linhas[1].strip().split(';')[0])
+        p_centros = int(linhas[1].strip().split(';')[1])
+        min_pontos_centro = int(linhas[1].strip().split(';')[2])
+        max_pontos_centro = int(linhas[1].strip().split(';')[3])
+
+        del linhas[:3]
+
+        # Lendo as coordenadas
+        for i in range(num_pontos):
+            coordenadas.append(tuple(map(int, linhas[i].strip().split(';')[1:])))
+
+    return num_pontos, p_centros, min_pontos_centro, max_pontos_centro, coordenadas, resultados, pasta
+
+# Calcula a distância euclidiana entre dois pontos
+def calcular_distancia(p1, p2):
+    return math.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+
+# Escolhendo p-centros
+def inicializar_centros(coordenadas, p_centros, min_pontos_centro):
+    # Calcula a média das coordenadas
+    soma_x = 0
+    soma_y = 0
+    for p in coordenadas:
+        soma_x += p[0]
+        soma_y += p[1]
+    x_medio = soma_x / len(coordenadas)
+    y_medio = soma_y / len(coordenadas)
+
+    # Encontra o ponto mais próximo da média para ser o primeiro centro
+    menor_distancia = float('inf')
+    primeiro_centro = None
+    for i in range(len(coordenadas)):
+        distancia = calcular_distancia((x_medio, y_medio), coordenadas[i])
+        if distancia < menor_distancia:
+            menor_distancia = distancia
+            primeiro_centro = i
+
+    centros = [primeiro_centro]
+
+    # Atribui pontos ao primeiro centro até atingir min_pontos_centro
+    atribuicao = {primeiro_centro: []}
+    restantes = set(range(len(coordenadas))) - set(centros)
+    while len(atribuicao[primeiro_centro]) < min_pontos_centro:
+        menor_distancia = float('inf')
+        mais_proximo = None
+        for i in restantes:
+            if i == primeiro_centro:  # Ignorar o próprio centro
+                continue
+            distancia = calcular_distancia(coordenadas[i], coordenadas[primeiro_centro])
+            if distancia < menor_distancia:
+                menor_distancia = distancia
+                mais_proximo = i
+        atribuicao[primeiro_centro].append(mais_proximo)
+        restantes.remove(mais_proximo)
+
+    # Define novos centros e atribui pontos até atingir p_centros
+    while len(centros) < p_centros:
+        maior_distancia = -float('inf')
+        mais_distante = None
+        for i in restantes:
+            distancia = calcular_distancia(coordenadas[i], coordenadas[centros[-1]])
+            if distancia > maior_distancia:
+                maior_distancia = distancia
+                mais_distante = i
+        centros.append(mais_distante)
+        atribuicao[mais_distante] = []
+
+        # Atribui pontos ao novo centro até atingir min_pontos_centro
+        while len(atribuicao[mais_distante]) < min_pontos_centro and restantes:
+            menor_distancia = float('inf')
+            mais_proximo = None
+            for i in restantes:
+                if i == mais_distante:  # Ignorar o próprio centro
+                    continue
+                distancia = calcular_distancia(coordenadas[i], coordenadas[mais_distante])
+                if distancia < menor_distancia:
+                    menor_distancia = distancia
+                    mais_proximo = i
+            atribuicao[mais_distante].append(mais_proximo)
+            restantes.remove(mais_proximo)
+
+    return centros, atribuicao, restantes
+
+# Atribui pontos restantes aos centros
+def atribuir_pontos_a_centros(coordenadas, centros, min_pontos_centro, max_pontos_centro, atribuicao, restantes):
+    for ponto in list(restantes):
+        melhor_centro = None
+        menor_distancia = float('inf')
+        for centro in centros:
+            if ponto == centro:  # Ignorar o caso em que o ponto é o próprio centro
+                continue
+            if len(atribuicao[centro]) < max_pontos_centro:
+                distancia = calcular_distancia(coordenadas[ponto], coordenadas[centro])
+                if distancia < menor_distancia:
+                    menor_distancia = distancia
+                    melhor_centro = centro
+        if melhor_centro is not None:
+            atribuicao[melhor_centro].append(ponto)
+            restantes.remove(ponto)
+
+    return atribuicao
+
+# Calcula o custo total da solução
+def calcular_custo_total(coordenadas, centros, atribuicao):
+    custo_total = 0
+    for centro, pontos in atribuicao.items():
+        for ponto in pontos:
+            custo_total += int(calcular_distancia(coordenadas[ponto], coordenadas[centro]))
+    return custo_total
+
+# Resolve a instância do problema
+def resolve_instancia(coordenadas, p_centros, min_pontos_centro, max_pontos_centro, max_iteracoes=100):
+    centros, atribuicao, restantes = inicializar_centros(coordenadas, p_centros, min_pontos_centro)
+    atribuicao = atribuir_pontos_a_centros(coordenadas, centros, min_pontos_centro, max_pontos_centro, atribuicao, restantes)
+    custo_total = calcular_custo_total(coordenadas, centros, atribuicao)
+    return centros, atribuicao, custo_total
+
+# Salva a solução no formato especificado
+def salva_solucao(resultados, pasta_saida):
+    for nome_arquivo, num_pontos, p_centros, min_pontos_centro, max_pontos_centro, custo_total, atribuicao in resultados:
+        caminho_arquivo_saida = os.path.join(pasta_saida, nome_arquivo)
+        with open(caminho_arquivo_saida, mode='w', encoding='utf-8') as file:
+            file.write(f"{custo_total}\n")
+            for centro, pontos in atribuicao.items():
+                linha = f"{centro};" + ";".join(map(str, pontos)) + "\n"
+                file.write(linha)
+
+# Processa os arquivos e salva as soluções
+def main():
+    pasta_entrada = "arq_instancia"
+    pasta_saida = "arq_solucao"
+
+    if not os.path.exists(pasta_saida):
+        os.makedirs(pasta_saida)
+
+    resultados = []
+
+    for arquivo in os.listdir(pasta_entrada):
+        caminho_arquivo = os.path.join(pasta_entrada, arquivo)
+        num_pontos, p_centros, min_pontos_centro, max_pontos_centro, coordenadas, _, _ = le_dados_inst(caminho_arquivo)
+        centros, atribuicao, custo_total = resolve_instancia(coordenadas, p_centros, min_pontos_centro, max_pontos_centro)
+        resultados.append((arquivo, num_pontos, p_centros, min_pontos_centro, max_pontos_centro, custo_total, atribuicao))
+
+    salva_solucao(resultados, pasta_saida)
+
+if __name__ == "__main__":
+    main()
